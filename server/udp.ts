@@ -485,6 +485,9 @@ export function decodeRegionHandshakePayload(payload: Buffer, fallbackRegionName
         regionProtocols = readBigUInt64LECompat(payload, offset);
         offset += 8;
       }
+      if (encodedValues > 2) {
+        offset += (encodedValues - 2) * 8;
+      }
       if (encodedValues < blockCount) {
         partial = true;
       }
