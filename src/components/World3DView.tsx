@@ -791,6 +791,17 @@ export const World3DView: React.FC<Props> = ({ session, onOpenEconomy, onOpenApp
     }
   };
 
+  const simulatorInfo = simData?.simulatorInfo ?? null;
+  const formatShortId = (value?: string | null) =>
+    value ? `${value.slice(0, 8)}…${value.slice(-4)}` : "—";
+  const terrainBands = simulatorInfo
+    ? (["00", "01", "10", "11"] as const).map((band) => ({
+        band,
+        start: simulatorInfo.terrain.startHeightsMeters[band],
+        range: simulatorInfo.terrain.heightRangesMeters[band],
+      }))
+    : [];
+
   return (
     <div
       ref={containerRef}
@@ -955,6 +966,97 @@ export const World3DView: React.FC<Props> = ({ session, onOpenEconomy, onOpenApp
                 {simData?.simFps || 45.0} / {simData?.physicsFps || 45.0}
               </div>
             </div>
+          </div>
+
+          <div className="bg-[#0A1020] p-2 rounded-lg border border-[#1E2D4A] space-y-2">
+            <div className="flex items-center gap-1 text-[10px] uppercase text-[#64748B] font-bold">
+              <Info className="w-3 h-3 text-[#00F0FF]" />
+              <span>Simulator Handshake</span>
+              {simulatorInfo?.isPartial && (
+                <span className="ml-auto text-[#FFEA00] normal-case">partial decode</span>
+              )}
+            </div>
+
+            {simulatorInfo ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-[#64748B]">Access:</span>
+                    <div className="text-[#F8FAFC] font-bold uppercase">
+                      {simulatorInfo.access.label} ({simulatorInfo.access.code})
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Estate:</span>
+                    <div className="text-[#F8FAFC] font-bold">
+                      {simulatorInfo.isEstateManager == null
+                        ? "Unknown"
+                        : simulatorInfo.isEstateManager
+                        ? "Manager"
+                        : "Resident"}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Owner:</span>
+                    <div className="text-[#CBD5E1]">{formatShortId(simulatorInfo.ownerId)}</div>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Water / Billable:</span>
+                    <div className="text-[#CBD5E1]">
+                      {simulatorInfo.waterHeightMeters.toFixed(2)}m /{" "}
+                      {simulatorInfo.billableFactor?.toFixed(3) ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Product:</span>
+                    <div className="text-[#CBD5E1] truncate">
+                      {simulatorInfo.productName || simulatorInfo.productSku || "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Colo / CPU:</span>
+                    <div className="text-[#CBD5E1] truncate">
+                      {simulatorInfo.coloName || "—"} /{" "}
+                      {simulatorInfo.cpuClassId != null ? `${simulatorInfo.cpuClassId}:${simulatorInfo.cpuRatio ?? 0}` : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-[#94A3B8] space-y-1">
+                  <div>
+                    Flags:{" "}
+                    {simulatorInfo.regionFlags.names.length > 0
+                      ? simulatorInfo.regionFlags.names.join(", ")
+                      : simulatorInfo.regionFlags.hex}
+                  </div>
+                  <div>
+                    Protocols:{" "}
+                    {simulatorInfo.protocols.names.length > 0
+                      ? simulatorInfo.protocols.names.join(", ")
+                      : simulatorInfo.protocols.hex || "none"}
+                  </div>
+                  <div>
+                    Region ID: {formatShortId(simulatorInfo.regionId)} · Cache:{" "}
+                    {formatShortId(simulatorInfo.cacheId)}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  {terrainBands.map((band) => (
+                    <div key={band.band} className="rounded border border-[#1E2D4A] bg-[#050810] px-2 py-1">
+                      <div className="text-[#64748B]">Terrain {band.band}</div>
+                      <div className="text-[#CBD5E1]">
+                        {band.start?.toFixed(2) ?? "—"}m + {band.range?.toFixed(2) ?? "—"}m
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-[11px] text-[#64748B] italic">
+                Awaiting simulator region handshake payload...
+              </div>
+            )}
           </div>
 
           {/* Ping Trigger Button */}

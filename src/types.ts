@@ -318,6 +318,61 @@ export interface SLWorldObject {
   hover_text?: string;
 }
 
+export type SimulatorAccessLabel = "unknown" | "trial" | "general" | "moderate" | "adult";
+
+export interface SimulatorTerrainBandMap {
+  "00": number | null;
+  "01": number | null;
+  "10": number | null;
+  "11": number | null;
+}
+
+export interface SimulatorFlagSummary {
+  value: number;
+  hex: string;
+  names: string[];
+}
+
+export interface SimulatorExtendedFlagSummary {
+  value: string | null;
+  hex: string | null;
+  names: string[];
+}
+
+export interface SLSimulatorInfo {
+  simName: string;
+  access: {
+    code: number;
+    label: SimulatorAccessLabel;
+  };
+  ownerId: string;
+  isEstateManager: boolean | null;
+  waterHeightMeters: number;
+  billableFactor: number | null;
+  cacheId: string | null;
+  regionId: string | null;
+  cpuClassId: number | null;
+  cpuRatio: number | null;
+  coloName: string | null;
+  productSku: string | null;
+  productName: string | null;
+  regionFlags: SimulatorFlagSummary;
+  regionFlagsExtended: SimulatorExtendedFlagSummary;
+  protocols: SimulatorExtendedFlagSummary;
+  terrain: {
+    baseTextures: [string, string, string, string];
+    detailTextures: [string, string, string, string];
+    startHeightsMeters: SimulatorTerrainBandMap;
+    heightRangesMeters: SimulatorTerrainBandMap;
+  };
+  blocks: {
+    regionInfo2: boolean;
+    regionInfo3: boolean;
+    regionInfo4: boolean;
+  };
+  isPartial: boolean;
+}
+
 export interface RealSimWorldData {
   regionName: string;
   simOwner: string;
@@ -337,6 +392,7 @@ export interface RealSimWorldData {
     position: [number, number, number];
     distance: number;
   }>;
+  simulatorInfo?: SLSimulatorInfo | null;
   balance: number;
   lastUpdated: string;
 }
