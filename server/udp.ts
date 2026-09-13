@@ -436,22 +436,18 @@ export function decodeRegionHandshakePayload(payload: Buffer, fallbackRegionName
   if (offset < payload.length) {
     const blockCount = readU8();
     if (blockCount && blockCount > 0) {
-      const nextExtended = readBigUInt64LECompat(payload, offset);
-      if (nextExtended !== null) {
-        regionFlagsExtended = nextExtended;
+      const encodedValues = Math.min(blockCount, Math.floor((payload.length - offset) / 8));
+      if (encodedValues >= 1) {
+        regionFlagsExtended = readBigUInt64LECompat(payload, offset);
         offset += 8;
-      } else {
+      }
+      if (encodedValues >= 2) {
+        regionProtocols = readBigUInt64LECompat(payload, offset);
+        offset += 8;
+      }
+      if (encodedValues < blockCount) {
         partial = true;
       }
-
-      const nextProtocols = readBigUInt64LECompat(payload, offset);
-      if (nextProtocols !== null) {
-        regionProtocols = nextProtocols;
-        offset += 8;
-      } else {
-        partial = true;
-      }
-
       if (regionFlagsExtended !== null || regionProtocols !== null) {
         info.blocks.regionInfo4 = true;
       }
@@ -1116,10 +1112,8 @@ export function generateAuthenticSimUdpPackets(session: SLSession): Buffer[] {
     header.writeUInt16BE(0x000F, o); o += 2; // RegionHandshake
 
     const regionFlags = 0x00400421;
-    const regionId = crypto.createHash("md5").update(`region:${session.regionName}:${session.sessionId}`).digest("hex");
-    const cacheId = crypto.createHash("md5").update(`cache:${session.sessionId}`).digest("hex");
-    const regionIdUuid = `${regionId.slice(0, 8)}-${regionId.slice(8, 12)}-${regionId.slice(12, 16)}-${regionId.slice(16, 20)}-${regionId.slice(20, 32)}`;
-    const cacheIdUuid = `${cacheId.slice(0, 8)}-${cacheId.slice(8, 12)}-${cacheId.slice(12, 16)}-${cacheId.slice(16, 20)}-${cacheId.slice(20, 32)}`;
+    const regionIdUuid = "8f5f77a1-1c35-43a0-bd5c-66c0f5d9b301";
+    const cacheIdUuid = "f2587f8e-9090-44a0-9db3-c9df5a1d4901";
     const terrainBase = [
       "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f001",
       "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f002",
@@ -1180,7 +1174,7 @@ export function generateAuthenticSimUdpPackets(session: SLSession): Buffer[] {
       terrainMetricBuf,
       uuidBuffer(regionIdUuid),
       regionInfo3,
-      Buffer.from([1]),
+      Buffer.from([2]),
       regionInfo4,
     ]));
   }
