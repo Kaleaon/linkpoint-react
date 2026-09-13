@@ -1,0 +1,209 @@
+[
+  {
+    "sessionId": "any-session-id",
+    "agentId": "11111111-2222-3333-4444-555555555555",
+    "secureSessionId": "22222222-3333-4444-5555-666666666666",
+    "circuitCode": 10001,
+    "simIp": "127.0.0.1",
+    "simPort": 13000,
+    "regionX": 256000,
+    "regionY": 256000,
+    "regionName": "Welcome Island",
+    "seedCapability": "",
+    "firstName": "Resident",
+    "lastName": "Avatar",
+    "fullName": "Resident Avatar",
+    "grid": "agni",
+    "loginMessage": "Connected to Second Life Linkpoint mobile gateway.",
+    "loginTime": "2026-09-12T14:24:05.365Z",
+    "inventorySkeleton": [
+      {
+        "id": "root-folder",
+        "parent_id": null,
+        "name": "My Inventory",
+        "type": "root",
+        "type_default": 0,
+        "version": 1
+      },
+      {
+        "id": "objects-folder",
+        "parent_id": "root-folder",
+        "name": "Objects",
+        "type": "object",
+        "type_default": 6,
+        "version": 1
+      },
+      {
+        "id": "clothing-folder",
+        "parent_id": "root-folder",
+        "name": "Clothing",
+        "type": "clothing",
+        "type_default": 5,
+        "version": 1
+      },
+      {
+        "id": "landmarks-folder",
+        "parent_id": "root-folder",
+        "name": "Landmarks",
+        "type": "landmark",
+        "type_default": 3,
+        "version": 1
+      }
+    ],
+    "inventoryRoot": "root-folder",
+    "buddyList": [
+      {
+        "id": "33333333-4444-5555-6666-777777777777",
+        "name": "Philip Linden",
+        "username": "philip.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "44444444-5555-6666-7777-888888888888",
+        "name": "Torley Linden",
+        "username": "torley.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "55555555-6666-7777-8888-999999999999",
+        "name": "Ebbe Linden",
+        "username": "ebbe.linden",
+        "online": false,
+        "can_see_me_online": true,
+        "can_see_me_map": false,
+        "can_modify_my_objects": false
+      }
+    ],
+    "capabilities": {},
+    "chatHistory": [
+      {
+        "id": "8eefe72a-78e9-4b84-a0ac-3eac181d22cc",
+        "channel": "local",
+        "scope": "local",
+        "scope_name": "Local Chat",
+        "sender": "Second Life Grid",
+        "sender_id": null,
+        "text": "Welcome to Second Life mobile communicator terminal. Connected to grid.",
+        "ts": "2026-09-12T14:24:05.365Z",
+        "system": true
+      },
+      {
+        "id": "b2eff015-168d-47e1-ba9c-1243cee757c3",
+        "channel": "local",
+        "scope": "local",
+        "scope_name": "Local Chat",
+        "sender": "Resident Avatar",
+        "sender_id": "11111111-2222-3333-4444-555555555555",
+        "text": "Testing transmission",
+        "ts": "2026-09-12T14:24:07.860Z",
+        "system": false
+      }
+    ],
+    "nearbyAvatars": [],
+    "eventQueueActive": false
+  },
+  {
+    "sessionId": "9c622850-0256-4931-9594-29caf6c4aade",
+    "agentId": "11111111-2222-3333-4444-555555555555",
+    "secureSessionId": "22222222-3333-4444-5555-666666666666",
+    "circuitCode": 10001,
+    "simIp": "127.0.0.1",
+    "simPort": 13000,
+    "regionX": 256000,
+    "regionY": 256000,
+    "regionName": "Welcome Island",
+    "seedCapability": "",
+    "firstName": "Resident",
+    "lastName": "Avatar",
+    "fullName": "Resident Avatar",
+    "grid": "agni",
+    "loginMessage": "Connected to Second Life Linkpoint mobile gateway.",
+    "loginTime": "2026-09-13T13:38:32.184Z",
+    "inventorySkeleton": [
+      {
+        "id": "root-folder",
+        "parent_id": null,
+        "name": "My Inventory",
+        "type": "root",
+        "type_default": 0,
+        "version": 1
+      },
+      {
+        "id": "objects-folder",
+        "parent_id": "root-folder",
+        "name": "Objects",
+        "type": "object",
+        "type_default": 6,
+        "version": 1
+      },
+      {
+        "id": "clothing-folder",
+        "parent_id": "root-folder",
+        "name": "Clothing",
+        "type": "clothing",
+        "type_default": 5,
+        "version": 1
+      },
+      {
+        "id": "landmarks-folder",
+        "parent_id": "root-folder",
+        "name": "Landmarks",
+        "type": "landmark",
+        "type_default": 3,
+        "version": 1
+      }
+    ],
+    "inventoryRoot": "root-folder",
+    "buddyList": [
+      {
+        "id": "33333333-4444-5555-6666-777777777777",
+        "name": "Philip Linden",
+        "username": "philip.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "44444444-5555-6666-7777-888888888888",
+        "name": "Torley Linden",
+        "username": "torley.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "55555555-6666-7777-8888-999999999999",
+        "name": "Ebbe Linden",
+        "username": "ebbe.linden",
+        "online": false,
+        "can_see_me_online": true,
+        "can_see_me_map": false,
+        "can_modify_my_objects": false
+      }
+    ],
+    "capabilities": {},
+    "chatHistory": [
+      {
+        "id": "70db3948-7e21-4321-9dc6-86198c57094f",
+        "channel": "local",
+        "scope": "local",
+        "scope_name": "Local Chat",
+        "sender": "Second Life Grid",
+        "sender_id": null,
+        "text": "Welcome to Second Life mobile communicator terminal. Connected to grid.",
+        "ts": "2026-09-13T13:38:32.184Z",
+        "system": true
+      }
+    ],
+    "nearbyAvatars": [],
+    "eventQueueActive": false
+  }
+]

@@ -1,0 +1,167 @@
+// On-device replacement for the Mongo collections the backend used.
+// Backed by browser localStorage (with in-memory cache) with serialized writes.
+
+type Doc = Record<string, any>;
+type Query = Record<string, any>;
+
+function matchesValue(actual: any, expected: any): boolean {
+  if (expected && typeof expected === "object" && !Array.isArray(expected)) {
+    if ("$in" in expected) return (expected.$in as any[]).includes(actual);
+    if ("$nin" in expected) return !(expected.$nin as any[]).includes(actual);
+    if ("$ne" in expected) return actual !== expected.$ne;
+  }
+  return actual === expected;
+}
+
+function matches(doc: Doc, query: Query): boolean {
+  return Object.entries(query).every(([k, v]) => matchesValue(doc[k], v));
+}
+
+class Collection {
+  private cache: Doc[] | null = null;
+  private writeChain: Promise<void> = Promise.resolve();
+
+  constructor(private name: string) {}
+
+  private key() {
+    return `gridlink.db.${this.name}`;
+  }
+
+  private async load(): Promise<Doc[]> {
+    if (this.cache) return this.cache;
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(this.key()) : null;
+      this.cache = raw ? JSON.parse(raw) : [];
+    } catch {
+      this.cache = [];
+    }
+    return this.cache!;
+  }
+
+  /** Serializes writes so concurrent callers never race a read-modify-write. */
+  private mutate<T>(fn: (docs: Doc[]) => T): Promise<T> {
+    const run = this.writeChain.then(async () => {
+      const docs = await this.load();
+      const result = fn(docs);
+      this.cache = docs;
+      try {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(this.key(), JSON.stringify(docs));
+        }
+      } catch (e) {
+        console.warn("Storage write failed", e);
+      }
+      return result;
+    });
+    this.writeChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  async findOne(query: Query = {}): Promise<Doc | null> {
+    const docs = await this.load();
+    return docs.find((d) => matches(d, query)) ?? null;
+  }
+
+  async find(query: Query = {}): Promise<Doc[]> {
+    const docs = await this.load();
+    return docs.filter((d) => matches(d, query));
+  }
+
+  async insertOne(doc: Doc): Promise<void> {
+    await this.mutate((docs) => {
+      docs.push({ ...doc });
+    });
+  }
+
+  async insertMany(items: Doc[]): Promise<void> {
+    if (!items.length) return;
+    await this.mutate((docs) => {
+      docs.push(...items.map((d) => ({ ...d })));
+    });
+  }
+
+  async updateOne(query: Query, update: { $set?: Doc }, opts: { upsert?: boolean } = {}): Promise<void> {
+    await this.mutate((docs) => {
+      const idx = docs.findIndex((d) => matches(d, query));
+      const set = update.$set ?? {};
+      if (idx >= 0) {
+        docs[idx] = { ...docs[idx], ...set };
+      } else if (opts.upsert) {
+        const base: Doc = {};
+        for (const [k, v] of Object.entries(query)) {
+          if (typeof v !== "object" || v === null) base[k] = v;
+        }
+        docs.push({ ...base, ...set });
+      }
+    });
+  }
+
+  async updateMany(query: Query, update: { $set?: Doc }): Promise<void> {
+    await this.mutate((docs) => {
+      const set = update.$set ?? {};
+      for (const d of docs) {
+        if (matches(d, query)) Object.assign(d, set);
+      }
+    });
+  }
+
+  async replaceOne(query: Query, doc: Doc, opts: { upsert?: boolean } = {}): Promise<void> {
+    await this.mutate((docs) => {
+      const idx = docs.findIndex((d) => matches(d, query));
+      if (idx >= 0) docs[idx] = { ...doc };
+      else if (opts.upsert) docs.push({ ...doc });
+    });
+  }
+
+  async deleteMany(query: Query): Promise<void> {
+    await this.mutate((docs) => {
+      for (let i = docs.length - 1; i >= 0; i--) {
+        if (matches(docs[i], query)) docs.splice(i, 1);
+      }
+    });
+  }
+}
+
+class LocalDB {
+  sessions = new Collection("sessions");
+  friends = new Collection("friends");
+  inventory = new Collection("inventory");
+  inventory_items = new Collection("inventory_items");
+  groups = new Collection("groups");
+  chat = new Collection("chat");
+  friend_requests = new Collection("friend_requests");
+  read_marks = new Collection("read_marks");
+}
+
+export const db = new LocalDB();
+
+export type LoginCreds = {
+  first: string;
+  last: string;
+  passwd_hash: string;
+  grid: "agni" | "aditi";
+  start: string;
+};
+
+const credsKey = (sessionId: string) => `gridlink.creds.${sessionId}`;
+
+export const secureCreds = {
+  async save(sessionId: string, creds: LoginCreds): Promise<void> {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(credsKey(sessionId), JSON.stringify(creds));
+    }
+  },
+  async load(sessionId: string): Promise<LoginCreds | null> {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(credsKey(sessionId));
+    return raw ? JSON.parse(raw) : null;
+  },
+  async clear(sessionId: string): Promise<void> {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(credsKey(sessionId));
+    }
+  },
+};

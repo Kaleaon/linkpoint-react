@@ -1,0 +1,6 @@
+{
+  "name": "Linkpoint",
+    "description": "A high-fidelity Second Life 3D world viewer and mobile communicator driven by live UDP circuit packet decoding, regional terrain elevation mesh, avatar locomotion, Windlight atmospheres, interactive prims, L$ economy, and inventory management.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
