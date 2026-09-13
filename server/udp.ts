@@ -1166,10 +1166,11 @@ export function generateAuthenticSimUdpPackets(session: SLSession): Buffer[] {
       "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f013",
       "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f014",
     ];
+    const regionOwnerUuid = "3a920364-1678-43e9-9be9-a1b702672a9e";
     const simNameBuf = writeVariable1String(simName);
     const regionFlagsBuf = Buffer.alloc(4);
     regionFlagsBuf.writeUInt32LE(regionFlags, 0);
-    const simOwnerBuf = uuidBuffer(session.agentId || "3a920364-1678-43e9-9be9-a1b702672a9e");
+    const simOwnerBuf = uuidBuffer(regionOwnerUuid);
     const waterBuf = Buffer.alloc(4);
     waterBuf.writeFloatLE(20.0, 0);
     const billableBuf = Buffer.alloc(4);

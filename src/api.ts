@@ -94,7 +94,6 @@ export type {
   OutfitPreset,
   AppearanceData,
   RealSimWorldData,
-  SLSimulatorInfo,
 } from "./types";
 
 const KEY = "linkpoint.session";
