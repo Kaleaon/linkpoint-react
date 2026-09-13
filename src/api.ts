@@ -94,6 +94,7 @@ export type {
   OutfitPreset,
   AppearanceData,
   RealSimWorldData,
+  SLSimulatorInfo,
 } from "./types";
 
 const KEY = "linkpoint.session";
@@ -217,4 +218,3 @@ export async function triggerMockTyping(
     sender_name: senderName,
   });
 }
-

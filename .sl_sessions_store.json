@@ -106,7 +106,45 @@
       }
     ],
     "nearbyAvatars": [],
-    "eventQueueActive": false
+    "eventQueueActive": false,
+    "groups": [
+      {
+        "id": "10000000-0000-0000-0000-000000000001",
+        "name": "Second Life Mentors & Helpers",
+        "insignia_id": "00000000-0000-0000-0000-000000000001",
+        "accept_notices": true,
+        "role": "Mentor",
+        "description": "Official volunteer community helping new residents navigate, learn avatar controls, and discover Second Life.",
+        "member_count": 3420
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000002",
+        "name": "LSL Scripting & Builders Guild",
+        "insignia_id": "00000000-0000-0000-0000-000000000002",
+        "accept_notices": true,
+        "role": "Scripter",
+        "description": "Collaborative workshop for Linden Scripting Language (LSL), mesh modeling, physics optimization, and interactive prims.",
+        "member_count": 1890
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000003",
+        "name": "Grid Explorers & Travelers",
+        "insignia_id": "00000000-0000-0000-0000-000000000003",
+        "accept_notices": true,
+        "role": "Traveler",
+        "description": "Expeditions across the mainland continents, Blake Sea sailing, scenic flyovers, and community sim discoveries.",
+        "member_count": 2750
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000004",
+        "name": "Linkpoint Communicator Users",
+        "insignia_id": "00000000-0000-0000-0000-000000000004",
+        "accept_notices": true,
+        "role": "Member",
+        "description": "Discussions and feedback for the Linkpoint mobile Second Life communicator terminal, telemetry updates, and bug reports.",
+        "member_count": 640
+      }
+    ]
   },
   {
     "sessionId": "9c622850-0256-4931-9594-29caf6c4aade",
@@ -200,6 +238,180 @@
         "sender_id": null,
         "text": "Welcome to Second Life mobile communicator terminal. Connected to grid.",
         "ts": "2026-09-13T13:38:32.184Z",
+        "system": true
+      }
+    ],
+    "nearbyAvatars": [],
+    "eventQueueActive": false,
+    "groups": [
+      {
+        "id": "10000000-0000-0000-0000-000000000001",
+        "name": "Second Life Mentors & Helpers",
+        "insignia_id": "00000000-0000-0000-0000-000000000001",
+        "accept_notices": true,
+        "role": "Mentor",
+        "description": "Official volunteer community helping new residents navigate, learn avatar controls, and discover Second Life.",
+        "member_count": 3420
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000002",
+        "name": "LSL Scripting & Builders Guild",
+        "insignia_id": "00000000-0000-0000-0000-000000000002",
+        "accept_notices": true,
+        "role": "Scripter",
+        "description": "Collaborative workshop for Linden Scripting Language (LSL), mesh modeling, physics optimization, and interactive prims.",
+        "member_count": 1890
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000003",
+        "name": "Grid Explorers & Travelers",
+        "insignia_id": "00000000-0000-0000-0000-000000000003",
+        "accept_notices": true,
+        "role": "Traveler",
+        "description": "Expeditions across the mainland continents, Blake Sea sailing, scenic flyovers, and community sim discoveries.",
+        "member_count": 2750
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000004",
+        "name": "Linkpoint Communicator Users",
+        "insignia_id": "00000000-0000-0000-0000-000000000004",
+        "accept_notices": true,
+        "role": "Member",
+        "description": "Discussions and feedback for the Linkpoint mobile Second Life communicator terminal, telemetry updates, and bug reports.",
+        "member_count": 640
+      }
+    ]
+  },
+  {
+    "sessionId": "udp-region-handshake-test",
+    "agentId": "11111111-2222-3333-4444-555555555555",
+    "secureSessionId": "22222222-3333-4444-5555-666666666666",
+    "circuitCode": 10001,
+    "simIp": "127.0.0.1",
+    "simPort": 13000,
+    "regionX": 256000,
+    "regionY": 256000,
+    "regionName": "Welcome Island",
+    "seedCapability": "",
+    "firstName": "Resident",
+    "lastName": "Avatar",
+    "fullName": "Resident Avatar",
+    "grid": "agni",
+    "loginMessage": "Connected to Second Life Linkpoint mobile gateway.",
+    "loginTime": "2026-09-13T15:12:36.406Z",
+    "inventorySkeleton": [
+      {
+        "id": "root-folder",
+        "parent_id": null,
+        "name": "My Inventory",
+        "type": "root",
+        "type_default": 0,
+        "version": 1
+      },
+      {
+        "id": "objects-folder",
+        "parent_id": "root-folder",
+        "name": "Objects",
+        "type": "object",
+        "type_default": 6,
+        "version": 1
+      },
+      {
+        "id": "clothing-folder",
+        "parent_id": "root-folder",
+        "name": "Clothing",
+        "type": "clothing",
+        "type_default": 5,
+        "version": 1
+      },
+      {
+        "id": "landmarks-folder",
+        "parent_id": "root-folder",
+        "name": "Landmarks",
+        "type": "landmark",
+        "type_default": 3,
+        "version": 1
+      }
+    ],
+    "inventoryRoot": "root-folder",
+    "buddyList": [
+      {
+        "id": "33333333-4444-5555-6666-777777777777",
+        "name": "Philip Linden",
+        "username": "philip.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "44444444-5555-6666-7777-888888888888",
+        "name": "Torley Linden",
+        "username": "torley.linden",
+        "online": true,
+        "can_see_me_online": true,
+        "can_see_me_map": true,
+        "can_modify_my_objects": false
+      },
+      {
+        "id": "55555555-6666-7777-8888-999999999999",
+        "name": "Ebbe Linden",
+        "username": "ebbe.linden",
+        "online": false,
+        "can_see_me_online": true,
+        "can_see_me_map": false,
+        "can_modify_my_objects": false
+      }
+    ],
+    "groups": [
+      {
+        "id": "10000000-0000-0000-0000-000000000001",
+        "name": "Second Life Mentors & Helpers",
+        "insignia_id": "00000000-0000-0000-0000-000000000001",
+        "accept_notices": true,
+        "role": "Mentor",
+        "description": "Official volunteer community helping new residents navigate, learn avatar controls, and discover Second Life.",
+        "member_count": 3420
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000002",
+        "name": "LSL Scripting & Builders Guild",
+        "insignia_id": "00000000-0000-0000-0000-000000000002",
+        "accept_notices": true,
+        "role": "Scripter",
+        "description": "Collaborative workshop for Linden Scripting Language (LSL), mesh modeling, physics optimization, and interactive prims.",
+        "member_count": 1890
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000003",
+        "name": "Grid Explorers & Travelers",
+        "insignia_id": "00000000-0000-0000-0000-000000000003",
+        "accept_notices": true,
+        "role": "Traveler",
+        "description": "Expeditions across the mainland continents, Blake Sea sailing, scenic flyovers, and community sim discoveries.",
+        "member_count": 2750
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000004",
+        "name": "Linkpoint Communicator Users",
+        "insignia_id": "00000000-0000-0000-0000-000000000004",
+        "accept_notices": true,
+        "role": "Member",
+        "description": "Discussions and feedback for the Linkpoint mobile Second Life communicator terminal, telemetry updates, and bug reports.",
+        "member_count": 640
+      }
+    ],
+    "capabilities": {},
+    "chatHistory": [
+      {
+        "id": "ece12a58-bec7-4dbb-be7d-e01429f90400",
+        "channel": "local",
+        "scope": "local",
+        "scope_name": "Local Chat",
+        "sender": "Second Life Grid",
+        "sender_id": null,
+        "text": "Welcome to Second Life mobile communicator terminal. Connected to grid.",
+        "ts": "2026-09-13T15:12:36.406Z",
         "system": true
       }
     ],

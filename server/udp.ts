@@ -29,6 +29,61 @@ export interface SLRealSimObject {
   isAvatar?: boolean;
 }
 
+export type SimulatorAccessLabel = "unknown" | "trial" | "general" | "moderate" | "adult";
+
+export interface SimulatorTerrainBandMap {
+  "00": number | null;
+  "01": number | null;
+  "10": number | null;
+  "11": number | null;
+}
+
+export interface SimulatorFlagSummary {
+  value: number;
+  hex: string;
+  names: string[];
+}
+
+export interface SimulatorExtendedFlagSummary {
+  value: string | null;
+  hex: string | null;
+  names: string[];
+}
+
+export interface SLSimulatorInfo {
+  simName: string;
+  access: {
+    code: number;
+    label: SimulatorAccessLabel;
+  };
+  ownerId: string;
+  isEstateManager: boolean | null;
+  waterHeightMeters: number;
+  billableFactor: number | null;
+  cacheId: string | null;
+  regionId: string | null;
+  cpuClassId: number | null;
+  cpuRatio: number | null;
+  coloName: string | null;
+  productSku: string | null;
+  productName: string | null;
+  regionFlags: SimulatorFlagSummary;
+  regionFlagsExtended: SimulatorExtendedFlagSummary;
+  protocols: SimulatorExtendedFlagSummary;
+  terrain: {
+    baseTextures: [string, string, string, string];
+    detailTextures: [string, string, string, string];
+    startHeightsMeters: SimulatorTerrainBandMap;
+    heightRangesMeters: SimulatorTerrainBandMap;
+  };
+  blocks: {
+    regionInfo2: boolean;
+    regionInfo3: boolean;
+    regionInfo4: boolean;
+  };
+  isPartial: boolean;
+}
+
 export interface RealSimWorldData {
   regionName: string;
   simOwner: string;
@@ -66,6 +121,7 @@ export interface RealSimWorldData {
     position: [number, number, number];
     distance: number;
   }>;
+  simulatorInfo: SLSimulatorInfo | null;
   balance: number;
   lastUpdated: string;
 }
@@ -97,6 +153,84 @@ export interface UDPCircuitState {
 }
 
 const activeCircuits = new Map<string, UDPCircuitState>();
+const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
+const REGION_FLAG_NAMES: Array<[number, string]> = [
+  [0x00000001, "allow_damage"],
+  [0x00000002, "sun_fixed"],
+  [0x00000004, "block_terraform"],
+  [0x00000008, "block_fly"],
+  [0x00000010, "allow_direct_teleport"],
+  [0x00000020, "restrict_pushobject"],
+  [0x00000040, "allow_landmark"],
+  [0x00000080, "restrict_set_home"],
+  [0x00000100, "reset_home_on_teleport"],
+  [0x00000200, "block_land_resell"],
+  [0x00000400, "sandbox"],
+  [0x00001000, "skip_scripts"],
+  [0x00004000, "skip_collisions"],
+  [0x00008000, "skip_physics"],
+  [0x00100000, "externally_visible"],
+  [0x00400000, "allow_voice"],
+  [0x00800000, "block_parcel_search"],
+  [0x40000000, "deny_anonymous"],
+  [0x80000000, "deny_age_unverified"],
+];
+const REGION_PROTOCOL_NAMES: Array<[bigint, string]> = [
+  [1n, "self_appearance_support"],
+];
+
+function decodeSimAccess(code: number): SimulatorAccessLabel {
+  switch (code) {
+    case 7:
+      return "trial";
+    case 13:
+      return "general";
+    case 21:
+      return "moderate";
+    case 42:
+      return "adult";
+    default:
+      return "unknown";
+  }
+}
+
+function listRegionFlags(value: number): string[] {
+  return REGION_FLAG_NAMES.filter(([flag]) => (value & flag) !== 0).map(([, name]) => name);
+}
+
+function listRegionProtocols(value: bigint): string[] {
+  return REGION_PROTOCOL_NAMES.filter(([flag]) => (value & flag) !== 0n).map(([, name]) => name);
+}
+
+function listExtendedRegionFlags(value: bigint): string[] {
+  return REGION_FLAG_NAMES.filter(([flag]) => (value & BigInt(flag >>> 0)) !== 0n).map(([, name]) => name);
+}
+
+function roundMetric(value: number | null | undefined, digits = 2): number | null {
+  if (!Number.isFinite(value)) return null;
+  return Number(Number(value).toFixed(digits));
+}
+
+function trimProtocolString(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.replace(/\0+$/g, "").trim();
+  return trimmed || null;
+}
+
+function toUuidTuple(values: string[]): [string, string, string, string] {
+  return [
+    values[0] || ZERO_UUID,
+    values[1] || ZERO_UUID,
+    values[2] || ZERO_UUID,
+    values[3] || ZERO_UUID,
+  ];
+}
+
+function uuidBuffer(uuid: string): Buffer {
+  const buf = Buffer.alloc(16);
+  uuidToBuffer(uuid, buf, 0);
+  return buf;
+}
 
 function uuidToBuffer(uuid: string, buf: Buffer, offset: number) {
   const clean = (uuid || "00000000-0000-0000-0000-000000000000").replace(/-/g, "");
@@ -109,6 +243,279 @@ function bufferToUuid(buf: Buffer, offset: number): string {
   if (offset + 16 > buf.length) return "00000000-0000-0000-0000-000000000000";
   const hex = buf.subarray(offset, offset + 16).toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
+function writeVariable1String(value: string) {
+  const raw = Buffer.from(value || "", "utf8");
+  const str = raw.length > 255 ? raw.subarray(0, 255) : raw;
+  return Buffer.concat([Buffer.from([str.length]), str]);
+}
+
+function readVariable1String(buf: Buffer, offset: number) {
+  if (offset >= buf.length) {
+    return { value: null as string | null, offset: buf.length, partial: true };
+  }
+
+  const len = buf.readUInt8(offset++);
+  const end = offset + len;
+  const safeEnd = Math.min(end, buf.length);
+  const value = trimProtocolString(buf.subarray(offset, safeEnd).toString("utf8"));
+  return {
+    value,
+    offset: safeEnd,
+    partial: safeEnd !== end,
+  };
+}
+
+function readBigUInt64LECompat(buf: Buffer, offset: number) {
+  if (offset + 8 > buf.length) return null;
+  return buf.readBigUInt64LE(offset);
+}
+
+function createDefaultSimulatorInfo(regionName = "Second Life Region", ownerId = ZERO_UUID): SLSimulatorInfo {
+  return {
+    simName: regionName,
+    access: {
+      code: 21,
+      label: "moderate",
+    },
+    ownerId,
+    isEstateManager: null,
+    waterHeightMeters: 20,
+    billableFactor: 1,
+    cacheId: ZERO_UUID,
+    regionId: null,
+    cpuClassId: null,
+    cpuRatio: null,
+    coloName: null,
+    productSku: null,
+    productName: null,
+    regionFlags: {
+      value: 0x00000001 | 0x00000020,
+      hex: "0x00000021",
+      names: listRegionFlags(0x00000001 | 0x00000020),
+    },
+    regionFlagsExtended: {
+      value: null,
+      hex: null,
+      names: [],
+    },
+    protocols: {
+      value: null,
+      hex: null,
+      names: [],
+    },
+    terrain: {
+      baseTextures: toUuidTuple([ZERO_UUID, ZERO_UUID, ZERO_UUID, ZERO_UUID]),
+      detailTextures: toUuidTuple([ZERO_UUID, ZERO_UUID, ZERO_UUID, ZERO_UUID]),
+      startHeightsMeters: { "00": 20, "01": 20, "10": 20, "11": 20 },
+      heightRangesMeters: { "00": 4, "01": 4, "10": 4, "11": 4 },
+    },
+    blocks: {
+      regionInfo2: false,
+      regionInfo3: false,
+      regionInfo4: false,
+    },
+    isPartial: true,
+  };
+}
+
+export function decodeRegionHandshakePayload(payload: Buffer, fallbackRegionName = "Second Life Region"): SLSimulatorInfo | null {
+  if (!payload || payload.length < 4) return null;
+
+  let offset = 0;
+  let partial = false;
+  const info = createDefaultSimulatorInfo(fallbackRegionName);
+
+  const requireBytes = (count: number) => {
+    if (offset + count <= payload.length) return true;
+    partial = true;
+    return false;
+  };
+
+  const readU8 = () => {
+    if (!requireBytes(1)) return null;
+    return payload.readUInt8(offset++);
+  };
+
+  const readBool = () => {
+    const value = readU8();
+    return value === null ? null : value !== 0;
+  };
+
+  const readU32 = () => {
+    if (!requireBytes(4)) return null;
+    const value = payload.readUInt32LE(offset);
+    offset += 4;
+    return value;
+  };
+
+  const readS32 = () => {
+    if (!requireBytes(4)) return null;
+    const value = payload.readInt32LE(offset);
+    offset += 4;
+    return value;
+  };
+
+  const readF32 = () => {
+    if (!requireBytes(4)) return null;
+    const value = payload.readFloatLE(offset);
+    offset += 4;
+    return value;
+  };
+
+  const readUuid = () => {
+    if (!requireBytes(16)) return null;
+    const value = bufferToUuid(payload, offset);
+    offset += 16;
+    return value;
+  };
+
+  const readVar1 = () => {
+    const result = readVariable1String(payload, offset);
+    offset = result.offset;
+    if (result.partial) partial = true;
+    return result.value;
+  };
+
+  const regionFlags = readU32();
+  if (regionFlags === null) return null;
+  const simAccess = readU8();
+  const simName = readVar1();
+  const simOwner = readUuid();
+  const isEstateManager = readBool();
+  const waterHeight = readF32();
+  const billableFactor = readF32();
+  const cacheId = readUuid();
+  const terrainBaseIds = [readUuid(), readUuid(), readUuid(), readUuid()].map((value) => value || ZERO_UUID);
+  const terrainDetailIds = [readUuid(), readUuid(), readUuid(), readUuid()].map((value) => value || ZERO_UUID);
+
+  const startHeight00 = roundMetric(readF32());
+  const startHeight01 = roundMetric(readF32());
+  const startHeight10 = roundMetric(readF32());
+  const startHeight11 = roundMetric(readF32());
+  const heightRange00 = roundMetric(readF32());
+  const heightRange01 = roundMetric(readF32());
+  const heightRange10 = roundMetric(readF32());
+  const heightRange11 = roundMetric(readF32());
+
+  let regionId: string | null = null;
+  if (offset < payload.length) {
+    const parsedRegionId = readUuid();
+    if (parsedRegionId) {
+      regionId = parsedRegionId;
+      info.blocks.regionInfo2 = true;
+    }
+  }
+
+  let cpuClassId: number | null = null;
+  let cpuRatio: number | null = null;
+  let coloName: string | null = null;
+  let productSku: string | null = null;
+  let productName: string | null = null;
+  if (offset < payload.length) {
+    const beforeInfo3 = offset;
+    const parsedCpuClassId = readS32();
+    const parsedCpuRatio = readS32();
+    const parsedColoName = readVar1();
+    const parsedProductSku = readVar1();
+    const parsedProductName = readVar1();
+
+    if (offset > beforeInfo3) {
+      cpuClassId = parsedCpuClassId;
+      cpuRatio = parsedCpuRatio;
+      coloName = parsedColoName;
+      productSku = parsedProductSku;
+      productName = parsedProductName;
+      info.blocks.regionInfo3 = true;
+    }
+  }
+
+  let regionFlagsExtended: bigint | null = null;
+  let regionProtocols: bigint | null = null;
+  if (offset < payload.length) {
+    const blockCount = readU8();
+    if (blockCount && blockCount > 0) {
+      const nextExtended = readBigUInt64LECompat(payload, offset);
+      if (nextExtended !== null) {
+        regionFlagsExtended = nextExtended;
+        offset += 8;
+      } else {
+        partial = true;
+      }
+
+      const nextProtocols = readBigUInt64LECompat(payload, offset);
+      if (nextProtocols !== null) {
+        regionProtocols = nextProtocols;
+        offset += 8;
+      } else {
+        partial = true;
+      }
+
+      if (regionFlagsExtended !== null || regionProtocols !== null) {
+        info.blocks.regionInfo4 = true;
+      }
+    } else if (blockCount === null) {
+      partial = true;
+    }
+  }
+
+  const accessCode = simAccess ?? 0;
+  info.simName = simName || fallbackRegionName;
+  info.access = {
+    code: accessCode,
+    label: decodeSimAccess(accessCode),
+  };
+  info.ownerId = simOwner || ZERO_UUID;
+  info.isEstateManager = isEstateManager;
+  info.waterHeightMeters = roundMetric(waterHeight) ?? 20;
+  info.billableFactor = roundMetric(billableFactor, 3);
+  info.cacheId = cacheId;
+  info.regionId = regionId;
+  info.cpuClassId = cpuClassId;
+  info.cpuRatio = cpuRatio;
+  info.coloName = coloName;
+  info.productSku = productSku;
+  info.productName = productName;
+  info.regionFlags = {
+    value: regionFlags,
+    hex: `0x${regionFlags.toString(16).padStart(8, "0")}`,
+    names: listRegionFlags(regionFlags),
+  };
+  info.regionFlagsExtended = {
+    value: regionFlagsExtended === null ? null : regionFlagsExtended.toString(),
+    hex: regionFlagsExtended === null ? null : `0x${regionFlagsExtended.toString(16)}`,
+    names: regionFlagsExtended === null ? [] : listExtendedRegionFlags(regionFlagsExtended),
+  };
+  info.protocols = {
+    value: regionProtocols === null ? null : regionProtocols.toString(),
+    hex: regionProtocols === null ? null : `0x${regionProtocols.toString(16)}`,
+    names: regionProtocols === null ? [] : listRegionProtocols(regionProtocols),
+  };
+  info.terrain = {
+    baseTextures: toUuidTuple(terrainBaseIds),
+    detailTextures: toUuidTuple(terrainDetailIds),
+    startHeightsMeters: {
+      "00": startHeight00,
+      "01": startHeight01,
+      "10": startHeight10,
+      "11": startHeight11,
+    },
+    heightRangesMeters: {
+      "00": heightRange00,
+      "01": heightRange01,
+      "10": heightRange10,
+      "11": heightRange11,
+    },
+  };
+  info.isPartial = partial || !info.blocks.regionInfo2 || !info.blocks.regionInfo3 || !info.blocks.regionInfo4;
+  return info;
+}
+
+export function decodeRegionHandshakeMessage(msg: Buffer, fallbackRegionName = "Second Life Region"): SLSimulatorInfo | null {
+  if (msg.length < 9) return null;
+  if (!(msg[5] === 0xff && msg[6] === 0xff) || msg.readUInt16BE(7) !== 0x000f) return null;
+  return decodeRegionHandshakePayload(msg.subarray(9), fallbackRegionName);
 }
 
 /**
@@ -153,6 +560,7 @@ function createEmptyRealSimData(regionName = "Second Life Region"): RealSimWorld
       },
     },
     avatars: [],
+    simulatorInfo: createDefaultSimulatorInfo(regionName, "3a920364-1678-43e9-9be9-a1b702672a9e"),
     balance: 1000,
     lastUpdated: new Date().toISOString(),
   };
@@ -413,22 +821,13 @@ export function decodeAndApplySimUdpPacket(
 
   // 1. RegionHandshake (Low Freq 0x000F)
   if (freq === "low" && messageId === 0x000F) {
-    if (offset + 24 <= msg.length) {
-      const regionFlags = msg.readUInt32LE(offset); offset += 4;
-      const waterHeight = msg.readFloatLE(offset); offset += 4;
-      const simOwner = bufferToUuid(msg, offset); offset += 16;
-
-      // Extract Sim Name (null-terminated string)
-      let nameEnd = offset;
-      while (nameEnd < msg.length && msg[nameEnd] !== 0) {
-        nameEnd++;
-      }
-      const simName = msg.subarray(offset, nameEnd).toString("utf8") || state.realSimData.regionName;
-
-      state.realSimData.regionName = simName;
-      state.realSimData.waterHeight = waterHeight;
-      state.realSimData.simOwner = simOwner;
-      state.realSimData.regionFlags = regionFlags;
+    const simulatorInfo = decodeRegionHandshakePayload(msg.subarray(offset), state.realSimData.regionName);
+    if (simulatorInfo) {
+      state.realSimData.regionName = simulatorInfo.simName;
+      state.realSimData.waterHeight = simulatorInfo.waterHeightMeters;
+      state.realSimData.simOwner = simulatorInfo.ownerId;
+      state.realSimData.regionFlags = simulatorInfo.regionFlags.value;
+      state.realSimData.simulatorInfo = simulatorInfo;
       state.realSimData.lastUpdated = new Date().toISOString();
 
       addPacketLog(state, {
@@ -436,7 +835,7 @@ export function decodeAndApplySimUdpPacket(
         type: "RegionHandshake",
         size: msg.length,
         ts: new Date().toISOString(),
-        info: `Sim: ${simName}, Water: ${waterHeight}m, Flags: 0x${regionFlags.toString(16)}`,
+        info: `Sim: ${simulatorInfo.simName}, Access: ${simulatorInfo.access.label}, Water: ${simulatorInfo.waterHeightMeters}m`,
       });
     }
   }
@@ -708,20 +1107,82 @@ export function generateAuthenticSimUdpPackets(session: SLSession): Buffer[] {
   // 1. Binary RegionHandshake Packet (Low Freq 0x000F)
   {
     const simName = session.regionName || "Welcome Hub";
-    const simNameBuf = Buffer.from(simName + "\0", "utf8");
-    const buf = Buffer.alloc(1 + 4 + 4 + 4 + 4 + 16 + simNameBuf.length + 32);
+    const header = Buffer.alloc(9);
     let o = 0;
-    buf.writeUInt8(0x00, o++);
-    buf.writeUInt32BE(seq++, o); o += 4;
-    buf.writeUInt8(0xFF, o++);
-    buf.writeUInt8(0xFF, o++);
-    buf.writeUInt16BE(0x000F, o); o += 2; // RegionHandshake
+    header.writeUInt8(0x00, o++);
+    header.writeUInt32BE(seq++, o); o += 4;
+    header.writeUInt8(0xFF, o++);
+    header.writeUInt8(0xFF, o++);
+    header.writeUInt16BE(0x000F, o); o += 2; // RegionHandshake
 
-    buf.writeUInt32LE(0x00000001 | 0x00000020, o); o += 4; // Region Flags
-    buf.writeFloatLE(20.0, o); o += 4; // Water Height 20.0m
-    uuidToBuffer(session.agentId || "3a920364-1678-43e9-9be9-a1b702672a9e", buf, o); o += 16;
-    simNameBuf.copy(buf, o); o += simNameBuf.length;
-    packets.push(buf.subarray(0, o));
+    const regionFlags = 0x00400421;
+    const regionId = crypto.createHash("md5").update(`region:${session.regionName}:${session.sessionId}`).digest("hex");
+    const cacheId = crypto.createHash("md5").update(`cache:${session.sessionId}`).digest("hex");
+    const regionIdUuid = `${regionId.slice(0, 8)}-${regionId.slice(8, 12)}-${regionId.slice(12, 16)}-${regionId.slice(16, 20)}-${regionId.slice(20, 32)}`;
+    const cacheIdUuid = `${cacheId.slice(0, 8)}-${cacheId.slice(8, 12)}-${cacheId.slice(12, 16)}-${cacheId.slice(16, 20)}-${cacheId.slice(20, 32)}`;
+    const terrainBase = [
+      "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f001",
+      "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f002",
+      "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f003",
+      "b8f7a3e9-c86c-4d92-a4d5-0f6a3cb4f004",
+    ];
+    const terrainDetail = [
+      "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f011",
+      "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f012",
+      "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f013",
+      "d1c72ac0-c86c-4d92-a4d5-0f6a3cb4f014",
+    ];
+    const simNameBuf = writeVariable1String(simName);
+    const regionFlagsBuf = Buffer.alloc(4);
+    regionFlagsBuf.writeUInt32LE(regionFlags, 0);
+    const simOwnerBuf = uuidBuffer(session.agentId || "3a920364-1678-43e9-9be9-a1b702672a9e");
+    const waterBuf = Buffer.alloc(4);
+    waterBuf.writeFloatLE(20.0, 0);
+    const billableBuf = Buffer.alloc(4);
+    billableBuf.writeFloatLE(1.0, 0);
+    const terrainMetricBuf = Buffer.alloc(8 * 4);
+    let t = 0;
+    [20.0, 22.0, 24.0, 26.0, 4.0, 5.0, 6.0, 7.0].forEach((value) => {
+      terrainMetricBuf.writeFloatLE(value, t);
+      t += 4;
+    });
+    const regionInfo3 = Buffer.concat([
+      (() => {
+        const buf = Buffer.alloc(4);
+        buf.writeInt32LE(9, 0);
+        return buf;
+      })(),
+      (() => {
+        const buf = Buffer.alloc(4);
+        buf.writeInt32LE(1, 0);
+        return buf;
+      })(),
+      writeVariable1String("dfw-colo-a"),
+      writeVariable1String("sl-mainland-full"),
+      writeVariable1String("Mainland Full Region"),
+    ]);
+    const regionInfo4 = Buffer.alloc(16);
+    regionInfo4.writeBigUInt64LE(BigInt(regionFlags), 0);
+    regionInfo4.writeBigUInt64LE(1n, 8);
+
+    packets.push(Buffer.concat([
+      header,
+      regionFlagsBuf,
+      Buffer.from([21]),
+      simNameBuf,
+      simOwnerBuf,
+      Buffer.from([1]),
+      waterBuf,
+      billableBuf,
+      uuidBuffer(cacheIdUuid),
+      ...terrainBase.map((value) => uuidBuffer(value)),
+      ...terrainDetail.map((value) => uuidBuffer(value)),
+      terrainMetricBuf,
+      uuidBuffer(regionIdUuid),
+      regionInfo3,
+      Buffer.from([1]),
+      regionInfo4,
+    ]));
   }
 
   // 2. Binary LayerData Packet (High Freq 0x0A) - Land elevation heightmap patches!
