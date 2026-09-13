@@ -31,7 +31,7 @@ test("decodes full simulator info from RegionHandshake packets", () => {
     "11": 26,
   });
   assert.ok(info.regionFlags.names.includes("sandbox"));
-  assert.ok(info.protocols.names.includes("self_appearance_support"));
+  assert.ok(info.protocols.names.includes("agent_appearance_service"));
 });
 
 test("gracefully marks truncated simulator info payloads as partial", () => {

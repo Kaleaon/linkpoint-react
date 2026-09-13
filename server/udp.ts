@@ -154,29 +154,69 @@ export interface UDPCircuitState {
 
 const activeCircuits = new Map<string, UDPCircuitState>();
 const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
+const DEFAULT_REGION_FLAGS = (1 << 0) | (1 << 8) | (1 << 28);
 const REGION_FLAG_NAMES: Array<[number, string]> = [
-  [0x00000001, "allow_damage"],
-  [0x00000002, "sun_fixed"],
-  [0x00000004, "block_terraform"],
-  [0x00000008, "block_fly"],
-  [0x00000010, "allow_direct_teleport"],
-  [0x00000020, "restrict_pushobject"],
-  [0x00000040, "allow_landmark"],
-  [0x00000080, "restrict_set_home"],
-  [0x00000100, "reset_home_on_teleport"],
-  [0x00000200, "block_land_resell"],
-  [0x00000400, "sandbox"],
-  [0x00001000, "skip_scripts"],
-  [0x00004000, "skip_collisions"],
-  [0x00008000, "skip_physics"],
-  [0x00100000, "externally_visible"],
-  [0x00400000, "allow_voice"],
-  [0x00800000, "block_parcel_search"],
-  [0x40000000, "deny_anonymous"],
-  [0x80000000, "deny_age_unverified"],
+  [1 << 0, "allow_damage"],
+  [1 << 1, "allow_landmark"],
+  [1 << 2, "allow_set_home"],
+  [1 << 3, "reset_home_on_teleport"],
+  [1 << 4, "sun_fixed"],
+  [1 << 5, "allow_access_override"],
+  [1 << 6, "block_terraform"],
+  [1 << 7, "block_land_resell"],
+  [1 << 8, "sandbox"],
+  [1 << 9, "allow_environment_override"],
+  [1 << 12, "skip_collisions"],
+  [1 << 13, "skip_scripts"],
+  [1 << 14, "skip_physics"],
+  [1 << 15, "externally_visible"],
+  [1 << 16, "allow_return_encroaching_object"],
+  [1 << 17, "allow_return_encroaching_estate_object"],
+  [1 << 18, "block_dwell"],
+  [1 << 19, "block_fly"],
+  [1 << 20, "allow_direct_teleport"],
+  [1 << 21, "estate_skip_scripts"],
+  [1 << 22, "restrict_pushobject"],
+  [1 << 23, "deny_anonymous"],
+  [1 << 26, "allow_parcel_changes"],
+  [1 << 27, "block_flyover"],
+  [1 << 28, "allow_voice"],
+  [1 << 29, "block_parcel_search"],
+  [1 << 30, "deny_age_unverified"],
+  [0x80000000, "deny_bots"],
+];
+const REGION_EXTENDED_FLAG_NAMES: Array<[bigint, string]> = [
+  [1n << 0n, "allow_damage"],
+  [1n << 1n, "allow_landmark"],
+  [1n << 2n, "allow_set_home"],
+  [1n << 3n, "reset_home_on_teleport"],
+  [1n << 4n, "sun_fixed"],
+  [1n << 5n, "allow_access_override"],
+  [1n << 6n, "block_terraform"],
+  [1n << 7n, "block_land_resell"],
+  [1n << 8n, "sandbox"],
+  [1n << 9n, "allow_environment_override"],
+  [1n << 12n, "skip_collisions"],
+  [1n << 13n, "skip_scripts"],
+  [1n << 14n, "skip_physics"],
+  [1n << 15n, "externally_visible"],
+  [1n << 16n, "allow_return_encroaching_object"],
+  [1n << 17n, "allow_return_encroaching_estate_object"],
+  [1n << 18n, "block_dwell"],
+  [1n << 19n, "block_fly"],
+  [1n << 20n, "allow_direct_teleport"],
+  [1n << 21n, "estate_skip_scripts"],
+  [1n << 22n, "restrict_pushobject"],
+  [1n << 23n, "deny_anonymous"],
+  [1n << 26n, "allow_parcel_changes"],
+  [1n << 27n, "block_flyover"],
+  [1n << 28n, "allow_voice"],
+  [1n << 29n, "block_parcel_search"],
+  [1n << 30n, "deny_age_unverified"],
+  [1n << 31n, "deny_bots"],
 ];
 const REGION_PROTOCOL_NAMES: Array<[bigint, string]> = [
-  [1n, "self_appearance_support"],
+  [1n, "agent_appearance_service"],
 ];
 
 function decodeSimAccess(code: number): SimulatorAccessLabel {
@@ -203,7 +243,7 @@ function listRegionProtocols(value: bigint): string[] {
 }
 
 function listExtendedRegionFlags(value: bigint): string[] {
-  return REGION_FLAG_NAMES.filter(([flag]) => (value & BigInt(flag >>> 0)) !== 0n).map(([, name]) => name);
+  return REGION_EXTENDED_FLAG_NAMES.filter(([flag]) => (value & flag) !== 0n).map(([, name]) => name);
 }
 
 function roundMetric(value: number | null | undefined, digits = 2): number | null {
@@ -291,9 +331,9 @@ function createDefaultSimulatorInfo(regionName = "Second Life Region", ownerId =
     productSku: null,
     productName: null,
     regionFlags: {
-      value: 0x00000001 | 0x00000020,
-      hex: "0x00000021",
-      names: listRegionFlags(0x00000001 | 0x00000020),
+      value: DEFAULT_REGION_FLAGS,
+      hex: `0x${DEFAULT_REGION_FLAGS.toString(16).padStart(8, "0")}`,
+      names: listRegionFlags(DEFAULT_REGION_FLAGS),
     },
     regionFlagsExtended: {
       value: null,
@@ -504,7 +544,7 @@ export function decodeRegionHandshakePayload(payload: Buffer, fallbackRegionName
       "11": heightRange11,
     },
   };
-  info.isPartial = partial || !info.blocks.regionInfo2 || !info.blocks.regionInfo3 || !info.blocks.regionInfo4;
+  info.isPartial = partial;
   return info;
 }
 
@@ -532,7 +572,7 @@ function createEmptyRealSimData(regionName = "Second Life Region"): RealSimWorld
     regionName,
     simOwner: "3a920364-1678-43e9-9be9-a1b702672a9e",
     waterHeight: 20.0,
-    regionFlags: 0x00000001 | 0x00000008 | 0x00000020, // Sandboxes, Voice, Fly
+    regionFlags: DEFAULT_REGION_FLAGS,
     simFps: 45.0,
     timeDilation: 0.99,
     physicsFps: 45.0,
@@ -1111,7 +1151,7 @@ export function generateAuthenticSimUdpPackets(session: SLSession): Buffer[] {
     header.writeUInt8(0xFF, o++);
     header.writeUInt16BE(0x000F, o); o += 2; // RegionHandshake
 
-    const regionFlags = 0x00400421;
+    const regionFlags = DEFAULT_REGION_FLAGS | (1 << 5) | (1 << 22);
     const regionIdUuid = "8f5f77a1-1c35-43a0-bd5c-66c0f5d9b301";
     const cacheIdUuid = "f2587f8e-9090-44a0-9db3-c9df5a1d4901";
     const terrainBase = [
