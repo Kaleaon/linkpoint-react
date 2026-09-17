@@ -953,6 +953,28 @@ async function startServer() {
     });
   });
 
+
+  // Region Teleport Endpoint
+  app.post("/api/sl/teleport", (req, res) => {
+    const { session_id, region } = req.body || {};
+    if (!session_id || !region) {
+      return res.status(400).json({ ok: false, error: "Missing session or region" });
+    }
+
+    const session = activeSessions.get(session_id);
+    if (!session) {
+      return res.status(404).json({ ok: false, error: "Session not found" });
+    }
+
+    // Faking teleport by updating the region
+    session.regionName = String(region).trim();
+    saveSessionsToDisk();
+
+    // Faking teleport chat message in local storage or client state since db is not directly exposed here
+
+    return res.json({ ok: true, region: session.regionName });
+  });
+
   // Official Second Life Live Events Endpoints
   app.get("/api/sl/events", async (req, res) => {
     try {

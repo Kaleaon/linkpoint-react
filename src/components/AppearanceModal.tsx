@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, Sparkles, X, Check, Shirt, Shield, Scissors } from "lucide-react";
+import { User, Sparkles, X, Check, Shirt, Shield, Scissors, Palette } from "lucide-react";
 import { api, type AppearanceData, type WornItem, type OutfitPreset, type Session } from "../api";
 
 interface Props {
@@ -11,8 +11,18 @@ interface Props {
 export const AppearanceModal: React.FC<Props> = ({ session, onClose, onAppearanceUpdated }) => {
   const [data, setData] = useState<AppearanceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"worn" | "presets">("worn");
+    const [activeTab, setActiveTab] = useState<"worn" | "presets" | "skins">("worn");
   const [savingPreset, setSavingPreset] = useState<string | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<{name: string, bg: string, text: string, border: string, msgBg: string, msgText: string}>({
+    name: "Cyber Blue", bg: "#0C1322", text: "#00F0FF", border: "#1E2D4A", msgBg: "#050810", msgText: "#E2E8F0"
+  });
+
+  const skinThemes = [
+    { name: "Cyber Blue", bg: "#0C1322", text: "#00F0FF", border: "#1E2D4A", msgBg: "#050810", msgText: "#E2E8F0" },
+    { name: "Matrix Green", bg: "#051105", text: "#00FF66", border: "#003311", msgBg: "#020802", msgText: "#A3D4A3" },
+    { name: "Neon Pink", bg: "#1A051A", text: "#FF00FF", border: "#4D004D", msgBg: "#0D020D", msgText: "#FFB3FF" },
+    { name: "Solar Orange", bg: "#1A0D00", text: "#FFAA00", border: "#4D2600", msgBg: "#0D0600", msgText: "#FFD480" }
+  ];
 
   const fetchAppearance = async () => {
     try {
@@ -116,7 +126,7 @@ export const AppearanceModal: React.FC<Props> = ({ session, onClose, onAppearanc
             <User className="w-3.5 h-3.5" />
             <span>Currently Worn ({data?.worn_items?.length || 0})</span>
           </button>
-          <button
+                    <button
             onClick={() => setActiveTab("presets")}
             className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
               activeTab === "presets"
@@ -126,6 +136,17 @@ export const AppearanceModal: React.FC<Props> = ({ session, onClose, onAppearanc
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Outfit Presets ({data?.presets?.length || 0})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("skins")}
+            className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
+              activeTab === "skins"
+                ? "border-[#00FF66] text-[#00FF66] bg-[#141E30]/40"
+                : "border-transparent text-[#64748B] hover:text-[#94A3B8]"
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5" />
+            <span>Skins Preview</span>
           </button>
         </div>
 
@@ -171,6 +192,52 @@ export const AppearanceModal: React.FC<Props> = ({ session, onClose, onAppearanc
                   )}
                 </div>
               ))}
+            </div>
+                    ) : activeTab === "skins" ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {skinThemes.map((theme) => (
+                  <button
+                    key={theme.name}
+                    onClick={() => setPreviewTheme(theme)}
+                    style={{ borderColor: theme.border, backgroundColor: theme.bg }}
+                    className={`p-2 rounded-lg border-2 flex items-center gap-2 transition-all ${
+                      previewTheme.name === theme.name ? "ring-2 ring-white/20" : "opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: theme.text }} />
+                    <span style={{ color: theme.text }} className="text-xs font-bold">{theme.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 p-3 rounded-lg border" style={{ backgroundColor: previewTheme.bg, borderColor: previewTheme.border }}>
+                <div className="text-xs font-bold mb-2 pb-1 border-b" style={{ color: previewTheme.text, borderColor: previewTheme.border }}>
+                  MOCK CHAT PREVIEW
+                </div>
+                <div className="space-y-2 font-mono text-[11px]">
+                  <div className="p-2 rounded" style={{ backgroundColor: previewTheme.msgBg }}>
+                    <span className="opacity-50 mr-2" style={{ color: previewTheme.msgText }}>[10:42]</span>
+                    <span className="font-bold mr-1" style={{ color: previewTheme.text }}>Philip Linden:</span>
+                    <span style={{ color: previewTheme.msgText }}>Welcome to Linkpoint!</span>
+                  </div>
+                  <div className="p-2 rounded" style={{ backgroundColor: previewTheme.msgBg }}>
+                    <span className="opacity-50 mr-2" style={{ color: previewTheme.msgText }}>[10:43]</span>
+                    <span className="font-bold mr-1" style={{ color: previewTheme.text }}>Torley Linden:</span>
+                    <span style={{ color: previewTheme.msgText }}>Loving this new skin theme.</span>
+                  </div>
+                  <div className="p-2 rounded border border-dashed" style={{ backgroundColor: previewTheme.bg, borderColor: previewTheme.border }}>
+                    <span className="opacity-50" style={{ color: previewTheme.text }}>&gt; Type message here...</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                className="w-full py-2 rounded-lg text-xs font-bold transition-opacity hover:opacity-90 cursor-pointer"
+                style={{ backgroundColor: previewTheme.text, color: previewTheme.msgBg }}
+              >
+                Apply {previewTheme.name} Theme (Demo)
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
