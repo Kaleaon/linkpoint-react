@@ -18,6 +18,17 @@ export const LoginView: React.FC<Props> = ({ onLoginSuccess, onOpenTPVPolicy }) 
   const [busy, setBusy] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [savedUsername, setSavedUsername] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("saved_username");
+    if (saved) {
+      setSavedUsername(saved);
+      setUsername(saved);
+    }
+  }, []);
+
 
   const connect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +79,15 @@ export const LoginView: React.FC<Props> = ({ onLoginSuccess, onOpenTPVPolicy }) 
         login_message: resp.login_message,
       };
 
+
+      if (rememberMe) {
+        localStorage.setItem("saved_username", username.trim());
+      } else {
+        localStorage.removeItem("saved_username");
+      }
+
       await saveSession(s);
+
       onLoginSuccess(s);
     } catch (err: any) {
       const msg = err?.detail || err?.message || String(err);
@@ -96,7 +115,15 @@ export const LoginView: React.FC<Props> = ({ onLoginSuccess, onOpenTPVPolicy }) 
         login_message: resp.login_message,
       };
 
+
+      if (rememberMe) {
+        localStorage.setItem("saved_username", username.trim());
+      } else {
+        localStorage.removeItem("saved_username");
+      }
+
       await saveSession(s);
+
       onLoginSuccess(s);
     } catch (err: any) {
       const msg = err?.detail || err?.message || String(err);
@@ -279,6 +306,20 @@ export const LoginView: React.FC<Props> = ({ onLoginSuccess, onOpenTPVPolicy }) 
               )}
             </div>
 
+                        {/* Remember Me */}
+            <div className="pt-1 flex items-start gap-2">
+              <input
+                id="remember-me-checkbox"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="mt-0.5 rounded border-[#1E2D4A] bg-[#050810] text-[#00F0FF] focus:ring-0 focus:outline-none cursor-pointer"
+              />
+              <label htmlFor="remember-me-checkbox" className="text-[10px] text-[#94A3B8] font-mono leading-tight cursor-pointer">
+                Remember username for easy reconnect
+              </label>
+            </div>
+
             {/* Linden Lab TOS Agreement */}
             <div className="pt-1 flex items-start gap-2">
               <input
@@ -305,6 +346,23 @@ export const LoginView: React.FC<Props> = ({ onLoginSuccess, onOpenTPVPolicy }) 
                   <div className="text-[11px] text-[#FFA8A8]">{error}</div>
                 </div>
               </div>
+            )}
+
+                        {/* Quick Reconnect Button */}
+            {savedUsername && (
+              <button
+                id="quick-reconnect-button"
+                type="button"
+                onClick={() => {
+                   setUsername(savedUsername);
+                   document.getElementById("input-password")?.focus();
+                }}
+                disabled={busy}
+                className="w-full mt-2 py-2 px-4 rounded bg-[#00FF66]/20 border border-[#00FF66]/40 hover:bg-[#00FF66]/30 text-[#00FF66] font-mono text-xs font-bold tracking-[0.1em] flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-[0_0_10px_rgba(0,255,102,0.1)]"
+              >
+                <Power className="w-4 h-4" />
+                <span>RECONNECT AS {savedUsername.toUpperCase()}</span>
+              </button>
             )}
 
             {/* Submit Button */}

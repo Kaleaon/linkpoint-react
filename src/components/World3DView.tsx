@@ -22,7 +22,7 @@ import {
   Radio,
   Wifi,
   Layers,
-  Terminal,
+  Terminal, X,
 } from "lucide-react";
 import {
   api,
@@ -55,6 +55,33 @@ export const World3DView: React.FC<Props> = ({ session, onOpenEconomy, onOpenApp
   const [selectedObject, setSelectedObject] = useState<SLWorldObject | null>(null);
   const [activeDialog, setActiveDialog] = useState<LSLDialog | null>(null);
   const [payTarget, setPayTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const [showTeleportUI, setShowTeleportUI] = useState(false);
+  const [teleportTarget, setTeleportTarget] = useState("");
+  const [isTeleporting, setIsTeleporting] = useState(false);
+
+  const handleTeleport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teleportTarget.trim()) return;
+    setIsTeleporting(true);
+    try {
+      const res = await api.post<{ ok: boolean; region?: string }>("/teleport", {
+        session_id: session.session_id,
+        region: teleportTarget.trim(),
+      });
+      if (res.ok) {
+        triggerNotice(`Teleported to ${res.region}`);
+        setShowTeleportUI(false);
+        setTeleportTarget("");
+        fetchSimData(); // refresh sim data for new region
+      }
+    } catch {
+      triggerNotice("Teleport failed.");
+    } finally {
+      setIsTeleporting(false);
+    }
+  };
+
   const [inspectObject, setInspectObject] = useState<SLWorldObject | null>(null);
 
   // Avatar Pose & Movement State
@@ -1147,6 +1174,39 @@ export const World3DView: React.FC<Props> = ({ session, onOpenEconomy, onOpenApp
           )}
         </div>
       </div>
+
+
+      {/* Teleport UI Overlay */}
+      {showTeleportUI && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 bg-[#0A101D]/90 backdrop-blur-md border border-[#00F0FF]/50 p-4 rounded-lg shadow-2xl z-40">
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-xs font-bold text-[#00F0FF] flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" />
+              <span>REGION TELEPORT</span>
+            </div>
+            <button onClick={() => setShowTeleportUI(false)} className="text-[#64748B] hover:text-white cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <form onSubmit={handleTeleport} className="space-y-3">
+            <input
+              type="text"
+              value={teleportTarget}
+              onChange={(e) => setTeleportTarget(e.target.value)}
+              placeholder="e.g. Arapaima"
+              className="w-full bg-[#050810] border border-[#1E2D4A] rounded px-2.5 py-1.5 text-xs text-[#E2E8F0] placeholder-[#64748B] focus:border-[#00F0FF] focus:outline-none"
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={isTeleporting || !teleportTarget.trim()}
+              className="w-full py-1.5 rounded bg-[#00F0FF]/20 border border-[#00F0FF]/40 text-[#00F0FF] text-[10px] font-bold tracking-wider hover:bg-[#00F0FF]/30 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {isTeleporting ? "ROUTING..." : "INITIATE TELEPORT"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* LSL Dialog Modal if triggered */}
       {activeDialog && (

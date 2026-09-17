@@ -92,7 +92,7 @@ function MainCommunicator({
   return (
     <div className="flex justify-center min-h-screen bg-[#020408] text-[#E2E8F0]">
       {/* Device frame container for tactical terminal mobile experience */}
-      <div className="w-full max-w-md h-screen flex flex-col bg-[#050810] border-x border-[#1E2D4A] shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-4xl h-screen flex flex-col bg-[#050810] border-x border-[#1E2D4A] shadow-2xl relative overflow-hidden">
         {/* Terminal Frame Top Bar with Subtle Latency Indicator in Top-Right Corner */}
         <div
           id="terminal-frame-header"
@@ -113,6 +113,7 @@ function MainCommunicator({
             onOpenUdpInspector={() => setIsUdpModalOpen(true)}
           />
         </div>
+
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden relative">
@@ -147,24 +148,30 @@ function MainCommunicator({
                 />
               </div>
             </div>
-          ) : activeTab === "chat" ? (
-            <ChatView
-              session={session}
-              initialChannel={chatTarget.channel}
-              initialScope={chatTarget.scope}
-              initialScopeName={chatTarget.scopeName}
-              onNavigateToFriends={() => setActiveTab("friends")}
-              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-              onOpenUdpInspector={() => setIsUdpModalOpen(true)}
-              onSessionExpired={onSessionExpired || onLogout}
-            />
-          ) : activeTab === "friends" ? (
-            <FriendsView
-              session={session}
-              onOpenIm={handleOpenIm}
-              onOpenSearch={() => setSubScreen("search")}
-              onStartVoiceCall={handleStartVoiceCall}
-            />
+          ) : activeTab === "chat" || activeTab === "friends" ? (
+            <div className="flex w-full h-full">
+              {/* On tablet/desktop (md), show both. On mobile, show only active tab */}
+              <div className={`w-full md:w-1/3 md:border-r border-[#1E2D4A] flex flex-col h-full ${activeTab === 'friends' ? 'flex' : 'hidden md:flex'}`}>
+                <FriendsView
+                  session={session}
+                  onOpenIm={handleOpenIm}
+                  onOpenSearch={() => setSubScreen("search")}
+                  onStartVoiceCall={handleStartVoiceCall}
+                />
+              </div>
+              <div className={`w-full md:w-2/3 flex flex-col h-full ${activeTab === 'chat' ? 'flex' : 'hidden md:flex'}`}>
+                <ChatView
+                  session={session}
+                  initialChannel={chatTarget.channel}
+                  initialScope={chatTarget.scope}
+                  initialScopeName={chatTarget.scopeName}
+                  onNavigateToFriends={() => setActiveTab("friends")}
+                  onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+                  onOpenUdpInspector={() => setIsUdpModalOpen(true)}
+                  onSessionExpired={onSessionExpired || onLogout}
+                />
+              </div>
+            </div>
           ) : activeTab === "events" ? (
             <LiveEventsView
               session={session}
